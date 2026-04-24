@@ -56,6 +56,7 @@ builder.Services.AddAuthentication(options =>
     options.ClientId     = builder.Configuration["OAuth:Google:ClientId"]     ?? "";
     options.ClientSecret = builder.Configuration["OAuth:Google:ClientSecret"] ?? "";
     options.CallbackPath = "/api/oauth/google/callback";
+    options.SaveTokens   = true; 
     options.Scope.Add("email");
     options.Scope.Add("profile");
 })
