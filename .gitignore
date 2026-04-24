@@ -1,6 +1,7 @@
 # Build folders
 bin/
 obj/
+Properties/
 
 # App settings (contains secrets)
 appsettings.json
