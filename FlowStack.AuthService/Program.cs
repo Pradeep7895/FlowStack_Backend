@@ -99,10 +99,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFlowStackWeb", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "https://flowStack.app")
+        policy.WithOrigins("http://localhost:3000","http://localhost:5009","https://flowStack.app")
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials();
+                
     });
 });
 
@@ -159,8 +160,8 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
 app.UseCors("AllowFlowStackWeb");
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
