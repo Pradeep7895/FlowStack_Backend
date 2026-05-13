@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="FlowStack.AuthService/FlowStack.AuthService.csproj" />
   <Project Path="FlowStack.BoardService/FlowStack.BoardService.csproj" />
+  <Project Path="FlowStack.CommentService/FlowStack.CommentService.csproj" />
   <Project Path="FlowStack.ListService/FlowStack.ListService.csproj" />
   <Project Path="FlowStack.TaskService/FlowStack.TaskService.csproj" />
   <Project Path="FlowStack.Workspace/FlowStack.Workspace.csproj" />
