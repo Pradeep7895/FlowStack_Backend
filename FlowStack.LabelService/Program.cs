@@ -10,24 +10,11 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 
-// Serilog bootstrap logger 
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .CreateBootstrapLogger();
-
 try
 {
     Log.Information("Starting FlowStack.LabelService...");
 
     var builder = WebApplication.CreateBuilder(args);
-
-    //  Serilog 
-    builder.Host.UseSerilog((ctx, svc, cfg) =>
-        cfg.ReadFrom.Configuration(ctx.Configuration)
-            .ReadFrom.Services(svc)
-            .Enrich.FromLogContext()
-            .Enrich.WithMachineName()
-            .Enrich.WithEnvironmentName());
 
     // Database (PostgreSQL) 
     builder.Services.AddDbContext<LabelDbContext>(options =>
