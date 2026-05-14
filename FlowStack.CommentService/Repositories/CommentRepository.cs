@@ -15,13 +15,13 @@ public class CommentRepository : ICommentRepository
 
 
     public async Task<Comment?> FindByCommentIdAsync(Guid commentId) =>
-        await _db.Comments.FirstOrDefaultAsync(c => c.CommentId == commentId);
+        await _db.Comments.FirstOrDefaultAsync(c => c.CommentId == commentId && !c.IsDeleted);
 
     // Card-scoped queries — top-level comments only, ordered chronologically
 
     public async Task<IEnumerable<Comment>> FindByCardIdAsync(Guid cardId) =>
         await _db.Comments
-            .Where(c => c.CardId == cardId && c.ParentCommentId == null)
+            .Where(c => c.CardId == cardId && c.ParentCommentId == null && !c.IsDeleted)
             .OrderBy(c => c.CreatedAt)
             .ToListAsync();
 
@@ -29,7 +29,7 @@ public class CommentRepository : ICommentRepository
 
     public async Task<IEnumerable<Comment>> FindByAuthorIdAsync(Guid authorId) =>
         await _db.Comments
-            .Where(c => c.AuthorId == authorId)
+            .Where(c => c.AuthorId == authorId && !c.IsDeleted)
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync();
 
@@ -37,13 +37,13 @@ public class CommentRepository : ICommentRepository
 
     public async Task<IEnumerable<Comment>> FindByParentCommentIdAsync(Guid parentCommentId) =>
         await _db.Comments
-            .Where(c => c.ParentCommentId == parentCommentId)
+            .Where(c => c.ParentCommentId == parentCommentId && !c.IsDeleted)
             .OrderBy(c => c.CreatedAt)
             .ToListAsync();
 
 
     public async Task<int> CountByCardIdAsync(Guid cardId) =>
-        await _db.Comments.CountAsync(c => c.CardId == cardId);
+        await _db.Comments.CountAsync(c => c.CardId == cardId && !c.IsDeleted);
 
     // Write operations
 

@@ -10,15 +10,36 @@ public class CommentServiceImpl : ICommentService
     private readonly ICommentRepository _commentRepo;
     private readonly TaskClient _taskClient;
     private readonly BoardClient _boardClient;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public CommentServiceImpl(
         ICommentRepository commentRepo,
         TaskClient taskClient,
-        BoardClient boardClient)
+        BoardClient boardClient,
+        IHttpContextAccessor httpContextAccessor)
     {
         _commentRepo = commentRepo;
         _taskClient = taskClient;
         _boardClient = boardClient;
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    private bool IsPlatformAdmin() =>
+        _httpContextAccessor.HttpContext?.User.IsInRole("PlatformAdmin") ?? false;
+
+    private async Task<BoardAccessResult> GetBoardAccessWithBypassAsync(Guid boardId, Guid userId)
+    {
+        if (IsPlatformAdmin())
+        {
+            return new BoardAccessResult
+            {
+                IsMember = true,
+                IsAdminOrCreator = true,
+                IsObserver = false,
+                IsClosed = false
+            };
+        }
+        return await _boardClient.GetBoardAccessAsync(boardId, userId);
     }
 
     // Comments 
@@ -29,7 +50,7 @@ public class CommentServiceImpl : ICommentService
         var boardId = await _taskClient.GetBoardIdForCardAsync(request.CardId, authHeader)
             ?? throw new KeyNotFoundException("Card not found or access denied.");
 
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to comment.");
@@ -115,7 +136,7 @@ public class CommentServiceImpl : ICommentService
         var boardId = await _taskClient.GetBoardIdForCardAsync(comment.CardId, authHeader)
             ?? throw new KeyNotFoundException("Card not found or access denied.");
 
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
         if (access.IsClosed)
             throw new InvalidOperationException("Cannot edit comments on a closed board.");
 
@@ -134,7 +155,7 @@ public class CommentServiceImpl : ICommentService
         var boardId = await _taskClient.GetBoardIdForCardAsync(comment.CardId, authHeader)
             ?? throw new KeyNotFoundException("Card not found or access denied.");
 
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
 
         // Admins can delete any comment; users can only delete their own
         if (comment.AuthorId != requesterId && !access.IsAdminOrCreator)
@@ -164,7 +185,7 @@ public class CommentServiceImpl : ICommentService
         var boardId = await _taskClient.GetBoardIdForCardAsync(request.CardId, authHeader)
             ?? throw new KeyNotFoundException("Card not found or access denied.");
 
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to add attachments.");
@@ -206,7 +227,7 @@ public class CommentServiceImpl : ICommentService
         var boardId = await _taskClient.GetBoardIdForCardAsync(attachment.CardId, authHeader)
             ?? throw new KeyNotFoundException("Card not found or access denied.");
 
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
 
         // Admins can delete any attachment; users can only delete their own
         if (attachment.UploaderId != requesterId && !access.IsAdminOrCreator)

@@ -24,6 +24,7 @@ try
             .UseSnakeCaseNamingConvention());
 
     //  Dependency Injection 
+    builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<ICommentRepository, CommentRepository>();
     builder.Services.AddScoped<ICommentService, CommentServiceImpl>();
 
