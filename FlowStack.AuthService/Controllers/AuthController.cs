@@ -184,64 +184,6 @@ public class AuthController : ControllerBase
         return NoContent();
     }
 
-    // Platform Admin endpoints 
-
-    // GET /api/auth/admin/users — list all users (paginated)
-    [HttpGet("admin/users")]
-    [Authorize(Roles = "PlatformAdmin")]
-    [ProducesResponseType(typeof(IEnumerable<UserProfileResponseDTO>), 200)]
-    public async Task<IActionResult> GetAllUsers(
-        [FromQuery] int page     = 1,
-        [FromQuery] int pageSize = 20)
-    {
-        var users = await _authService.GetAllUsersAsync(page, pageSize);
-        return Ok(users);
-    }
-
-    // POST /api/auth/admin/users/{id}/suspend
-    [HttpPost("admin/users/{userId:guid}/suspend")]
-    [Authorize(Roles = "PlatformAdmin")]
-    [ProducesResponseType(204), ProducesResponseType(404)]
-    public async Task<IActionResult> SuspendUser([FromRoute] Guid userId)
-    {
-        try
-        {
-            await _authService.DeactivateAccountAsync(userId);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound(new { message = "User not found." });
-        }
-    }
-
-    // POST /api/auth/admin/users/{id}/reactivate
-    [HttpPost("admin/users/{userId:guid}/reactivate")]
-    [Authorize(Roles = "PlatformAdmin")]
-    [ProducesResponseType(204), ProducesResponseType(404)]
-    public async Task<IActionResult> ReactivateUser([FromRoute] Guid userId)
-    {
-        try
-        {
-            await _authService.ReactivateAccountAsync(userId);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound(new { message = "User not found." });
-        }
-    }
-
-    // DELETE /api/auth/admin/users/{id} — permanently delete a user
-    [HttpDelete("admin/users/{userId:guid}")]
-    [Authorize(Roles = "PlatformAdmin")]
-    [ProducesResponseType(204)]
-    public async Task<IActionResult> DeleteUserPermanently([FromRoute] Guid userId)
-    {
-        await _authService.DeleteUserPermanentlyAsync(userId);
-        return NoContent();
-    }
-
     // Private helpers 
 
     private Guid GetCurrentUserId()

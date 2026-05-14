@@ -12,14 +12,15 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FlowStack.AuthService.Migrations
 {
     [DbContext(typeof(AuthDbContext))]
-    [Migration("20260422064642_FlowStack.Auth")]
-    partial class FlowStackAuth
+    [Migration("20260514103219_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("auth")
                 .HasAnnotation("ProductVersion", "8.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -97,7 +98,21 @@ namespace FlowStack.AuthService.Migrations
                     b.HasKey("UserId")
                         .HasName("pk_users");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", "auth");
+
+                    b.HasData(
+                        new
+                        {
+                            UserId = new Guid("adadadad-adad-adad-adad-adadadadadad"),
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Email = "admin@flowstack.io",
+                            FullName = "Platform Administrator",
+                            IsActive = true,
+                            PasswordHash = "$2a$11$q8bNbKoL//FYPam5TB3lfOPsl6bR/mPdrOOfmlbRF7BSLmj40n.dy",
+                            Provider = 0,
+                            Role = 2,
+                            Username = "platform_admin"
+                        });
                 });
 #pragma warning restore 612, 618
         }

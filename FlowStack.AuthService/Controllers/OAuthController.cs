@@ -39,7 +39,7 @@ public class OAuthController : ControllerBase
     {
         var properties = new AuthenticationProperties
         {
-            RedirectUri = Url.Action(nameof(GoogleCallback)),
+            RedirectUri = Url.Action(nameof(GoogleSuccess)),
             Items       = { ["returnUrl"] = returnUrl }
         };
         return Challenge(properties, "Google");
@@ -51,10 +51,10 @@ public class OAuthController : ControllerBase
     // authorization code for a Google access token, fetches the user profile,
     // and populates HttpContext.User — then execution reaches here.
 
-    [HttpGet("google/callback")]
+    [HttpGet("google/success")]
     [ProducesResponseType(typeof(AuthResponseDTO), 200)]
     [ProducesResponseType(401)]
-    public async Task<IActionResult> GoogleCallback()
+    public async Task<IActionResult> GoogleSuccess()
     {
         return await HandleCallbackAsync(OAuthProvider.Google);
     }
@@ -70,7 +70,7 @@ public class OAuthController : ControllerBase
     {
         var properties = new AuthenticationProperties
         {
-            RedirectUri = Url.Action(nameof(GitHubCallback)),
+            RedirectUri = Url.Action(nameof(GitHubSuccess)),
             Items       = { ["returnUrl"] = returnUrl }
         };
         return Challenge(properties, "GitHub");
@@ -82,10 +82,10 @@ public class OAuthController : ControllerBase
     // intercepts this path, exchanges the code, fetches user profile from
     // api.github.com/user, maps claims, then execution reaches here.
     
-    [HttpGet("github/callback")]
+    [HttpGet("github/success")]
     [ProducesResponseType(typeof(AuthResponseDTO), 200)]
     [ProducesResponseType(401)]
-    public async Task<IActionResult> GitHubCallback()
+    public async Task<IActionResult> GitHubSuccess()
     {
         return await HandleCallbackAsync(OAuthProvider.GitHub);
     }
@@ -99,11 +99,19 @@ public class OAuthController : ControllerBase
 
     private async Task<IActionResult> HandleCallbackAsync(OAuthProvider provider)
     {
-        // These claims are populated by the OAuth middleware — not from a JWT
-        var providerUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var email          = User.FindFirst(ClaimTypes.Email)?.Value;
-        var fullName       = User.FindFirst(ClaimTypes.Name)?.Value;
-        var avatarUrl      = User.FindFirst("avatar_url")?.Value;
+        // Explicitly authenticate against the "External" cookie scheme
+        var authResult = await HttpContext.AuthenticateAsync("External");
+        
+        if (!authResult.Succeeded)
+        {
+            return Unauthorized(new { message = "External authentication failed or session expired." });
+        }
+
+        var principal = authResult.Principal;
+        var providerUserId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var email          = principal.FindFirst(ClaimTypes.Email)?.Value;
+        var fullName       = principal.FindFirst(ClaimTypes.Name)?.Value;
+        var avatarUrl      = principal.FindFirst("avatar_url")?.Value;
 
         if (string.IsNullOrWhiteSpace(providerUserId) || string.IsNullOrWhiteSpace(email))
         {
@@ -123,12 +131,23 @@ public class OAuthController : ControllerBase
                 fullName ?? email.Split('@')[0],  
                 avatarUrl);
 
-            return Ok(response);
+            // Instead of returning JSON, redirect back to the Frontend (port 3000)
+            var frontendUrl = "http://localhost:3000/oauth-success";
+            var query = $"?token={response.AccessToken}" +
+                        $"&refreshToken={response.RefreshToken}" +
+                        $"&userId={response.User.UserId}" +
+                        $"&email={Uri.EscapeDataString(response.User.Email)}" +
+                        $"&fullName={Uri.EscapeDataString(response.User.FullName)}" +
+                        $"&username={Uri.EscapeDataString(response.User.Username)}" +
+                        $"&role={response.User.Role}" +
+                        $"&avatarUrl={Uri.EscapeDataString(response.User.AvatarUrl ?? "")}";
+
+            return Redirect(frontendUrl + query);
         }
         catch (UnauthorizedAccessException ex)
         {
             // Account exists but is deactivated
-            return Unauthorized(new { message = ex.Message });
+            return Redirect($"http://localhost:3000/login?error={Uri.EscapeDataString(ex.Message)}");
         }
     }
 }

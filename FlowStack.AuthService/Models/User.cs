@@ -6,7 +6,7 @@ namespace FlowStack.AuthService.Models;
 public enum UserRole
 {
     Member,
-    BoardAdmin,
+    WorkspaceAdmin,
     PlatformAdmin
 }
 

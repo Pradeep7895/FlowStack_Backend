@@ -13,7 +13,7 @@ public class AuthServiceImpl : IAuthService
     public AuthServiceImpl(IUserRepository userRepo, JwtHelper jwt)
     {
         _userRepo = userRepo;
-        _jwt      = jwt;
+        _jwt = jwt;
     }
 
     // Registration 
@@ -30,15 +30,15 @@ public class AuthServiceImpl : IAuthService
 
         var user = new User
         {
-            FullName           = request.FullName,
-            Email              = request.Email.ToLower(),
-            Username           = request.Username.ToLower(),
+            FullName = request.FullName,
+            Email = request.Email.ToLower(),
+            Username = request.Username.ToLower(),
 
             // BCrypt automatically salts and hashes the password
-            PasswordHash       = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            Provider           = OAuthProvider.Local,
-            Role               = UserRole.Member,
-            RefreshToken       = refreshToken,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            Provider = OAuthProvider.Local,
+            Role = UserRole.Member,
+            RefreshToken = refreshToken,
             RefreshTokenExpiry = DateTime.UtcNow.AddDays(30)
         };
 
@@ -114,15 +114,15 @@ public class AuthServiceImpl : IAuthService
             return Task.FromResult(new TokenValidationResponseDTO { IsValid = false });
 
         var userIdClaim = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) ?? principal.FindFirst("sub");
-        var roleClaim   = principal.FindFirst(System.Security.Claims.ClaimTypes.Role);
-        var emailClaim  = principal.FindFirst(System.Security.Claims.ClaimTypes.Email) ?? principal.FindFirst("email");
+        var roleClaim = principal.FindFirst(System.Security.Claims.ClaimTypes.Role);
+        var emailClaim = principal.FindFirst(System.Security.Claims.ClaimTypes.Email) ?? principal.FindFirst("email");
 
         return Task.FromResult(new TokenValidationResponseDTO
         {
             IsValid = true,
-            UserId  = userIdClaim is not null ? Guid.Parse(userIdClaim.Value) : null,
-            Role    = roleClaim?.Value,
-            Email   = emailClaim?.Value
+            UserId = userIdClaim is not null ? Guid.Parse(userIdClaim.Value) : null,
+            Role = roleClaim?.Value,
+            Email = emailClaim?.Value
         });
     }
 
@@ -183,9 +183,12 @@ public class AuthServiceImpl : IAuthService
 
     public async Task DeactivateAccountAsync(Guid userId)
     {
+        if (userId == Guid.Parse("adadadad-adad-adad-adad-adadadadadad"))
+            throw new InvalidOperationException("Cannot deactivate the root platform administrator.");
+
         var user = await RequireUserAsync(userId);
-        user.IsActive           = false;
-        user.RefreshToken       = null;
+        user.IsActive = false;
+        user.RefreshToken = null;
         user.RefreshTokenExpiry = null;
         await _userRepo.UpdateAsync(user);
     }
@@ -215,58 +218,68 @@ public class AuthServiceImpl : IAuthService
         string fullName,
         string? avatarUrl)
     {
-        // Try to find an existing user linked to this OAuth account
-        var user = await _userRepo.FindByProviderAsync(provider, providerUserId);
-
-        if (user is null)
+        try
         {
-            // Check if a local account exists with the same email — link it
-            user = await _userRepo.FindByEmailAsync(email);
+            // Try to find an existing user linked to this OAuth account
+            var user = await _userRepo.FindByProviderAsync(provider, providerUserId);
 
-            if (user is not null)
+            if (user is null)
             {
-                // Link the existing account to this OAuth provider
-                user.Provider       = provider;
-                user.ProviderUserId = providerUserId;
-                if (avatarUrl is not null) user.AvatarUrl = avatarUrl;
-                user = await _userRepo.UpdateAsync(user);
-            }
-            else
-            {
-                // Brand new user — create from OAuth profile
-                var baseUsername = email.Split('@')[0].ToLower();
-                var username     = await EnsureUniqueUsernameAsync(baseUsername);
+                // Check if a local account exists with the same email — link it
+                user = await _userRepo.FindByEmailAsync(email);
 
-                user = new User
+                if (user is not null)
                 {
-                    FullName       = fullName,
-                    Email          = email.ToLower(),
-                    Username       = username,
-                    Provider       = provider,
-                    ProviderUserId = providerUserId,
-                    AvatarUrl      = avatarUrl,
-                    Role           = UserRole.Member
-                };
-                user = await _userRepo.CreateAsync(user);
+                    // Link the existing account to this OAuth provider
+                    user.Provider = provider;
+                    user.ProviderUserId = providerUserId;
+                    if (avatarUrl is not null) user.AvatarUrl = avatarUrl;
+                    user = await _userRepo.UpdateAsync(user);
+                }
+                else
+                {
+                    // Brand new user — create from OAuth profile
+                    var baseUsername = email.Split('@')[0].ToLower();
+                    var username = await EnsureUniqueUsernameAsync(baseUsername);
+
+                    user = new User
+                    {
+                        FullName = fullName,
+                        Email = email.ToLower(),
+                        Username = username,
+                        Provider = provider,
+                        ProviderUserId = providerUserId,
+                        AvatarUrl = avatarUrl,
+                        Role = UserRole.Member
+                    };
+                    user = await _userRepo.CreateAsync(user);
+                }
             }
+
+            if (!user.IsActive)
+                throw new UnauthorizedAccessException("This account has been deactivated.");
+
+            var refreshToken = _jwt.GenerateRefreshToken();
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
+            await _userRepo.UpdateAsync(user);
+
+            var accessToken = _jwt.GenerateAccessToken(user);
+            return BuildAuthResponse(user, accessToken, refreshToken);
         }
-
-        if (!user.IsActive)
-            throw new UnauthorizedAccessException("This account has been deactivated.");
-
-        var refreshToken = _jwt.GenerateRefreshToken();
-        user.RefreshToken = refreshToken;
-        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
-        await _userRepo.UpdateAsync(user);
-
-        var accessToken = _jwt.GenerateAccessToken(user);
-        return BuildAuthResponse(user, accessToken, refreshToken);
+        catch (Exception ex)
+        {
+            throw;
+        }
     }
 
     //  Platform Admin 
 
     public async Task DeleteUserPermanentlyAsync(Guid userId)
     {
+        if (userId == Guid.Parse("adadadad-adad-adad-adad-adadadadadad"))
+            throw new InvalidOperationException("Cannot delete the root platform administrator.");
+
         await _userRepo.DeleteByUserIdAsync(userId);
     }
 
@@ -274,6 +287,37 @@ public class AuthServiceImpl : IAuthService
     {
         var users = await _userRepo.GetAllUsersAsync(page, pageSize);
         return users.Select(UserProfileResponseDTO.FromUser);
+    }
+
+    public async Task PromoteToWorkspaceAdminAsync(Guid userId)
+    {
+        var user = await RequireUserAsync(userId);
+        user.Role = UserRole.WorkspaceAdmin;
+        await _userRepo.UpdateAsync(user);
+    }
+
+    public async Task DemoteToMemberAsync(Guid userId)
+    {
+        if (userId == Guid.Parse("adadadad-adad-adad-adad-adadadadadad"))
+            throw new InvalidOperationException("Cannot demote the root platform administrator.");
+
+        var user = await RequireUserAsync(userId);
+        user.Role = UserRole.Member;
+        await _userRepo.UpdateAsync(user);
+    }
+
+    public async Task<object> GetPlatformStatsAsync()
+    {
+        var allUsers = await _userRepo.GetAllUsersAsync(1, int.MaxValue);
+
+        return new
+        {
+            TotalUsers = allUsers.Count(),
+            ActiveUsers = allUsers.Count(u => u.IsActive),
+            PlatformAdmins = allUsers.Count(u => u.Role == UserRole.PlatformAdmin),
+            WorkspaceAdmins = allUsers.Count(u => u.Role == UserRole.WorkspaceAdmin),
+            Members = allUsers.Count(u => u.Role == UserRole.Member)
+        };
     }
 
     //  Private helpers 
