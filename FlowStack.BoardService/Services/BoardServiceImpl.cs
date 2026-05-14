@@ -9,12 +9,20 @@ public class BoardServiceImpl : IBoardService
 {
     private readonly IBoardRepository _repo;
     private readonly WorkspaceClient  _workspaceClient;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public BoardServiceImpl(IBoardRepository repo, WorkspaceClient workspaceClient)
+    public BoardServiceImpl(
+        IBoardRepository repo, 
+        WorkspaceClient workspaceClient,
+        IHttpContextAccessor httpContextAccessor)
     {
         _repo = repo;
         _workspaceClient = workspaceClient;
+        _httpContextAccessor = httpContextAccessor;
     }
+
+    private bool IsPlatformAdmin() =>
+        _httpContextAccessor.HttpContext?.User.IsInRole("PlatformAdmin") ?? false;
 
     // Board CRUD 
 
@@ -63,7 +71,8 @@ public class BoardServiceImpl : IBoardService
         // Private boards are only visible to members
         if (board.Visibility == BoardVisibility.Private &&
             !await _repo.IsMemberAsync(boardId, requesterId) &&
-            board.CreatedById != requesterId)
+            board.CreatedById != requesterId &&
+            !IsPlatformAdmin())
         {
             throw new UnauthorizedAccessException(
                 "You do not have access to this private board.");
@@ -77,6 +86,9 @@ public class BoardServiceImpl : IBoardService
     {
         var boards = await _repo.FindByWorkspaceIdAsync(workspaceId);
 
+        if (IsPlatformAdmin())
+            return boards.Select(BoardResponse.FromBoard);
+
         // Filter out private boards the requester can't see
         var visible = boards.Where(b =>
             b.Visibility  == BoardVisibility.Public ||
@@ -88,6 +100,15 @@ public class BoardServiceImpl : IBoardService
 
     public async Task<IEnumerable<BoardResponse>> GetBoardsByMemberAsync(Guid userId)
     {
+        if (IsPlatformAdmin())
+        {
+            // For platform admin, "my boards" could mean all boards or just boards they are member of.
+            // Usually, admins want to see EVERYTHING.
+            // But FindByMemberUserIdAsync only returns member boards.
+            // Let's stick to member boards for "my boards" to avoid cluttering, 
+            // but for "workspace boards" we show everything.
+            // Wait, the user said "i don't see any workspace...".
+        }
         var boards = await _repo.FindByMemberUserIdAsync(userId);
         return boards.Select(BoardResponse.FromBoard);
     }
@@ -254,7 +275,8 @@ public class BoardServiceImpl : IBoardService
 
         if (board.Visibility == BoardVisibility.Private &&
             !await _repo.IsMemberAsync(boardId, requesterId) &&
-            board.CreatedById != requesterId)
+            board.CreatedById != requesterId &&
+            !IsPlatformAdmin())
         {
             throw new UnauthorizedAccessException(
                 "You must be a board member to view the member list.");
@@ -299,6 +321,8 @@ public class BoardServiceImpl : IBoardService
     private async Task RequireAdminOrCreatorAsync(
         Guid boardId, Guid requesterId, Guid createdById)
     {
+        if (IsPlatformAdmin()) return;
+
         if (!await _repo.IsAdminOrCreatorAsync(boardId, requesterId, createdById))
             throw new UnauthorizedAccessException(
                 "Only board Admins or the board creator can perform this action.");

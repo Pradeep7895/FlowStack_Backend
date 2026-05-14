@@ -18,6 +18,9 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
+    // Npgsql 6.0+ legacy timestamp behavior
+    AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
     Log.Information("Starting FlowStack.BoardService...");
 
     var builder = WebApplication.CreateBuilder(args);
@@ -35,7 +38,8 @@ try
             .UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
             .UseSnakeCaseNamingConvention());
 
-    // Dependency Injection 
+    // Dependency Injection
+    builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<IBoardRepository, BoardRepository>();
     builder.Services.AddScoped<IBoardService, BoardServiceImpl>();
 
@@ -83,7 +87,7 @@ try
     builder.Services.AddAuthorization(options =>
     {
         options.AddPolicy("MemberOrAbove", policy =>
-            policy.RequireRole("Member", "BoardAdmin", "PlatformAdmin"));
+            policy.RequireRole("Member", "WorkspaceAdmin", "PlatformAdmin"));
 
         options.AddPolicy("AdminOnly", policy =>
             policy.RequireRole("PlatformAdmin"));
