@@ -4,7 +4,6 @@ obj/
 Properties/
 keys/
 
-
 # App settings (contains secrets)
 appsettings.json
 
