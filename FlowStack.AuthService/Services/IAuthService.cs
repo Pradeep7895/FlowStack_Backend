@@ -30,4 +30,7 @@ public interface IAuthService
     // Platform Admin operations
     Task DeleteUserPermanentlyAsync(Guid userId);
     Task<IEnumerable<UserProfileResponseDTO>> GetAllUsersAsync(int page, int pageSize);
+    Task PromoteToWorkspaceAdminAsync(Guid userId);
+    Task DemoteToMemberAsync(Guid userId);
+    Task<object> GetPlatformStatsAsync();
 }
