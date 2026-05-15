@@ -1,0 +1,14 @@
+# Build folders
+bin/
+obj/
+Properties/
+
+# App settings (contains secrets)
+appsettings.json
+
+# Visual Studio cache file
+*.csproj.user
+*.csproj.lscache
+
+# Optional: VS Code / IDE files
+.vscode/
