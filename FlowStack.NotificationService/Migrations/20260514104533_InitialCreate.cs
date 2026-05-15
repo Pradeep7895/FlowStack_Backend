@@ -11,8 +11,12 @@ namespace FlowStack.NotificationService.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "notification");
+
             migrationBuilder.CreateTable(
                 name: "notifications",
+                schema: "notification",
                 columns: table => new
                 {
                     notification_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -36,7 +40,8 @@ namespace FlowStack.NotificationService.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "notifications");
+                name: "notifications",
+                schema: "notification");
         }
     }
 }

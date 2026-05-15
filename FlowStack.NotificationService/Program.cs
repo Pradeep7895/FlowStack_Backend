@@ -23,6 +23,7 @@ try
             .UseSnakeCaseNamingConvention());
 
     //  Dependency Injection 
+    builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
     builder.Services.AddScoped<INotificationService, NotificationServiceImpl>();
 

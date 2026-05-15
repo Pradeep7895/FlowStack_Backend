@@ -17,6 +17,7 @@ namespace FlowStack.NotificationService.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("notification")
                 .HasAnnotation("ProductVersion", "8.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -75,7 +76,7 @@ namespace FlowStack.NotificationService.Migrations
                     b.HasKey("NotificationId")
                         .HasName("pk_notifications");
 
-                    b.ToTable("notifications", (string)null);
+                    b.ToTable("notifications", "notification");
                 });
 #pragma warning restore 612, 618
         }
