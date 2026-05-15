@@ -59,8 +59,8 @@ try
     // board-service validates tokens LOCALLY using the shared secret.
     // No round-trip to auth-service per request — stateless and fast.
     // All three values (Secret, Issuer, Audience) MUST match auth-service exactly.
-    var jwtSecret   = builder.Configuration["Jwt:Secret"] ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
-    var jwtIssuer   = builder.Configuration["Jwt:Issuer"];
+    var jwtSecret = builder.Configuration["Jwt:Secret"] ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
+    var jwtIssuer = builder.Configuration["Jwt:Issuer"];
     var jwtAudience = builder.Configuration["Jwt:Audience"];
 
     builder.Services.AddAuthentication(options =>
@@ -73,13 +73,13 @@ try
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            ValidateIssuer           = true,
-            ValidIssuer              = jwtIssuer,
-            ValidateAudience         = true,
-            ValidAudience            = jwtAudience,
-            ValidateLifetime         = true,
-            ClockSkew                = TimeSpan.Zero 
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
         };
     });
 
@@ -112,19 +112,19 @@ try
     {
         options.SwaggerDoc("v1", new OpenApiInfo
         {
-            Title       = "FlowStack Board Service",
-            Version     = "v1",
+            Title = "FlowStack Board Service",
+            Version = "v1",
             Description = "Kanban board management and membership for FlowStack"
         });
 
         options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
-            Name         = "Authorization",
-            Type         = SecuritySchemeType.Http,
-            Scheme       = "bearer",
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
             BearerFormat = "JWT",
-            In           = ParameterLocation.Header,
-            Description  = "Paste your JWT token here. Example: eyJhbGci..."
+            In = ParameterLocation.Header,
+            Description = "Paste your JWT token here. Example: eyJhbGci..."
         });
 
         options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -158,15 +158,13 @@ try
 
     app.UseRequestLogging();
 
-    if (app.Environment.IsDevelopment())
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI(c =>
-        {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "FlowStack Board Service v1");
-            c.RoutePrefix = "swagger";
-        });
-    }
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "FlowStack Board Service v1");
+        c.RoutePrefix = "swagger";
+    });
+
 
     app.UseHttpsRedirection();
 
