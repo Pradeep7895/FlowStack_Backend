@@ -118,7 +118,7 @@ try
             Scheme = "bearer",
             BearerFormat = "JWT",
             In = ParameterLocation.Header,
-            Description  = "Enter your JWT token."
+            Description = "Enter your JWT token."
         });
 
         options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -149,15 +149,12 @@ try
     app.UseGlobalExceptionHandler();  // 2. Catch all unhandled exceptions
     app.UseRequestLogging();          // 3. Log every request/response
 
-    if (app.Environment.IsDevelopment())
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI(c =>
-        {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "FlowStack Task Service v1");
-            c.RoutePrefix = "swagger";
-        });
-    }
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "FlowStack Task Service v1");
+        c.RoutePrefix = "swagger";
+    });
 
     app.UseHttpsRedirection();
     app.UseCors("AllowFlowStackWeb");
