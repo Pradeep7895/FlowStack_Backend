@@ -12,14 +12,15 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FlowStack.Workspace.Migrations
 {
     [DbContext(typeof(WorkspaceDbContext))]
-    [Migration("20260424160740_FlowStack.Workspace")]
-    partial class FlowStackWorkspace
+    [Migration("20260514104930_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("workspace")
                 .HasAnnotation("ProductVersion", "8.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -66,7 +67,7 @@ namespace FlowStack.Workspace.Migrations
                     b.HasKey("WorkspaceId")
                         .HasName("pk_workspaces");
 
-                    b.ToTable("workspaces", (string)null);
+                    b.ToTable("workspaces", "workspace");
                 });
 
             modelBuilder.Entity("FlowStack.Workspace.Models.WorkspaceMember", b =>
@@ -98,7 +99,7 @@ namespace FlowStack.Workspace.Migrations
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("ix_workspace_members_workspace_id");
 
-                    b.ToTable("workspace_members", (string)null);
+                    b.ToTable("workspace_members", "workspace");
                 });
 
             modelBuilder.Entity("FlowStack.Workspace.Models.WorkspaceMember", b =>

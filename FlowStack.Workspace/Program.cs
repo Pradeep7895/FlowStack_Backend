@@ -8,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
+// Npgsql 6.0+ legacy timestamp behavior
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 //  Database (PostgreSQL) 
@@ -63,7 +66,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("MemberOrAbove", policy =>
-        policy.RequireRole("Member", "BoardAdmin", "PlatformAdmin"));
+        policy.RequireRole("Member", "WorkspaceAdmin", "PlatformAdmin"));
 
     options.AddPolicy("AdminOnly", policy =>
         policy.RequireRole("PlatformAdmin"));

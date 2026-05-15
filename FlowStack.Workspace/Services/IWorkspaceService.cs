@@ -9,6 +9,7 @@ public interface IWorkspaceService
     Task<WorkspaceDetailResponse> GetByIdAsync(Guid workspaceId, Guid requesterId);
     Task<IEnumerable<WorkspaceResponse>> GetByOwnerAsync(Guid ownerId);
     Task<IEnumerable<WorkspaceResponse>> GetByMemberAsync(Guid userId);
+    Task<IEnumerable<WorkspaceResponse>> GetAllAsync();
     Task<IEnumerable<WorkspaceResponse>> GetPublicWorkspacesAsync();
     Task<WorkspaceDetailResponse> UpdateWorkspaceAsync(Guid workspaceId, Guid requesterId, UpdateWorkspaceRequest request);
     Task DeleteWorkspaceAsync(Guid workspaceId, Guid requesterId);

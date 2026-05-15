@@ -6,13 +6,17 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FlowStack.Workspace.Migrations
 {
     /// <inheritdoc />
-    public partial class FlowStackWorkspace : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "workspace");
+
             migrationBuilder.CreateTable(
                 name: "workspaces",
+                schema: "workspace",
                 columns: table => new
                 {
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -31,6 +35,7 @@ namespace FlowStack.Workspace.Migrations
 
             migrationBuilder.CreateTable(
                 name: "workspace_members",
+                schema: "workspace",
                 columns: table => new
                 {
                     member_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -45,6 +50,7 @@ namespace FlowStack.Workspace.Migrations
                     table.ForeignKey(
                         name: "fk_workspace_members_workspaces_workspace_id",
                         column: x => x.workspace_id,
+                        principalSchema: "workspace",
                         principalTable: "workspaces",
                         principalColumn: "workspace_id",
                         onDelete: ReferentialAction.Cascade);
@@ -52,6 +58,7 @@ namespace FlowStack.Workspace.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "ix_workspace_members_workspace_id",
+                schema: "workspace",
                 table: "workspace_members",
                 column: "workspace_id");
         }
@@ -60,10 +67,12 @@ namespace FlowStack.Workspace.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "workspace_members");
+                name: "workspace_members",
+                schema: "workspace");
 
             migrationBuilder.DropTable(
-                name: "workspaces");
+                name: "workspaces",
+                schema: "workspace");
         }
     }
 }

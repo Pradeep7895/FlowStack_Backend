@@ -10,6 +10,7 @@ public interface IWorkspaceRepository
     Task<IEnumerable<Models.Workspace>> FindByOwnerIdAsync(Guid ownerId);
     Task<IEnumerable<Models.Workspace>> FindByMemberUserIdAsync(Guid userId);
     Task<IEnumerable<Models.Workspace>> FindByVisibilityAsync(WorkspaceVisibility visibility);
+    Task<IEnumerable<Models.Workspace>> FindAllAsync();
     Task<IEnumerable<Models.Workspace>> FindPublicWorkspacesAsync();
     Task<bool> ExistsByNameAndOwnerIdAsync(string name, Guid ownerId);
     Task<int> CountByOwnerIdAsync(Guid ownerId);

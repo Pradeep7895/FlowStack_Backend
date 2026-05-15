@@ -78,11 +78,18 @@ public class WorkspaceController : ControllerBase
     }
 
     // GET /api/workspaces/member
-    // Get all workspaces where the current user is a member (not necessarily owner).
+    // Get all workspaces where the current user is a member.
+    // If user is PlatformAdmin, they see EVERYTHING.
     [HttpGet("member")]
     [ProducesResponseType(typeof(IEnumerable<WorkspaceResponse>), 200)]
     public async Task<IActionResult> GetMemberWorkspaces()
     {
+        if (User.IsInRole("PlatformAdmin"))
+        {
+            var all = await _workspaceService.GetAllAsync();
+            return Ok(all);
+        }
+
         var workspaces = await _workspaceService.GetByMemberAsync(GetCurrentUserId());
         return Ok(workspaces);
     }
@@ -95,6 +102,17 @@ public class WorkspaceController : ControllerBase
     public async Task<IActionResult> GetPublicWorkspaces()
     {
         var workspaces = await _workspaceService.GetPublicWorkspacesAsync();
+        return Ok(workspaces);
+    }
+
+    // GET /api/workspaces/all
+    // Admin only — browse all workspaces on the platform.
+    [HttpGet("all")]
+    [Authorize(Roles = "PlatformAdmin")]
+    [ProducesResponseType(typeof(IEnumerable<WorkspaceResponse>), 200)]
+    public async Task<IActionResult> GetAllWorkspaces()
+    {
+        var workspaces = await _workspaceService.GetAllAsync();
         return Ok(workspaces);
     }
 

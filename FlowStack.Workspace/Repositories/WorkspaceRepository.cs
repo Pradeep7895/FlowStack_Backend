@@ -15,6 +15,12 @@ public class WorkspaceRepository : IWorkspaceRepository
 
     // Workspace queries 
 
+    public async Task<IEnumerable<Models.Workspace>> FindAllAsync() =>
+        await _db.Workspaces
+                .Include(w => w.Members)
+                .OrderByDescending(w => w.CreatedAt)
+                .ToListAsync();
+
     public async Task<Models.Workspace?> FindByWorkspaceIdAsync(Guid workspaceId) =>
         await _db.Workspaces.FirstOrDefaultAsync(w => w.WorkspaceId == workspaceId);
 

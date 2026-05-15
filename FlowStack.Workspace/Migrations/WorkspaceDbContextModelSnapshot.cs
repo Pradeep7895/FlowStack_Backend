@@ -17,6 +17,7 @@ namespace FlowStack.Workspace.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("workspace")
                 .HasAnnotation("ProductVersion", "8.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -63,7 +64,7 @@ namespace FlowStack.Workspace.Migrations
                     b.HasKey("WorkspaceId")
                         .HasName("pk_workspaces");
 
-                    b.ToTable("workspaces", (string)null);
+                    b.ToTable("workspaces", "workspace");
                 });
 
             modelBuilder.Entity("FlowStack.Workspace.Models.WorkspaceMember", b =>
@@ -95,7 +96,7 @@ namespace FlowStack.Workspace.Migrations
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("ix_workspace_members_workspace_id");
 
-                    b.ToTable("workspace_members", (string)null);
+                    b.ToTable("workspace_members", "workspace");
                 });
 
             modelBuilder.Entity("FlowStack.Workspace.Models.WorkspaceMember", b =>

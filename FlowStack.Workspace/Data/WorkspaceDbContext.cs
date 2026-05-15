@@ -10,4 +10,10 @@ public class WorkspaceDbContext : DbContext
     public DbSet<Models.Workspace> Workspaces => Set<Models.Workspace>();
     public DbSet<WorkspaceMember> WorkspaceMembers => Set<WorkspaceMember>();
 
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.HasDefaultSchema("workspace");
+        base.OnModelCreating(modelBuilder);
+    }
+
 }

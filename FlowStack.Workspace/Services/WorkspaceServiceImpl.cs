@@ -75,6 +75,12 @@ public class WorkspaceServiceImpl : IWorkspaceService
         return workspaces.Select(WorkspaceResponse.FromWorkspace);
     }
 
+    public async Task<IEnumerable<WorkspaceResponse>> GetAllAsync()
+    {
+        var workspaces = await _repo.FindAllAsync();
+        return workspaces.Select(WorkspaceResponse.FromWorkspace);
+    }
+
     public async Task<IEnumerable<WorkspaceResponse>> GetPublicWorkspacesAsync()
     {
         var workspaces = await _repo.FindPublicWorkspacesAsync();
