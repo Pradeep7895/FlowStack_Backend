@@ -15,6 +15,9 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateBootstrapLogger();
 
+// Npgsql 6.0+ legacy timestamp behavior
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 try
 {
     Log.Information("Starting FlowStack.TaskService...");
@@ -34,7 +37,8 @@ try
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
                 .UseSnakeCaseNamingConvention());
 
-    // Dependency Injection 
+    // Dependency Injection
+    builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<ICardRepository, CardRepository>();
     builder.Services.AddScoped<ICardService, CardServiceImpl>();
 
@@ -77,7 +81,7 @@ try
     builder.Services.AddAuthorization(options =>
     {
         options.AddPolicy("MemberOrAbove", policy =>
-            policy.RequireRole("Member", "BoardAdmin", "PlatformAdmin"));
+            policy.RequireRole("Member", "WorkspaceAdmin", "PlatformAdmin"));
 
         options.AddPolicy("AdminOnly", policy =>
             policy.RequireRole("PlatformAdmin"));

@@ -6,13 +6,17 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FlowStack.TaskService.Migrations
 {
     /// <inheritdoc />
-    public partial class TaskService : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "task");
+
             migrationBuilder.CreateTable(
                 name: "cards",
+                schema: "task",
                 columns: table => new
                 {
                     card_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -36,48 +40,14 @@ namespace FlowStack.TaskService.Migrations
                 {
                     table.PrimaryKey("pk_cards", x => x.card_id);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "ix_cards_assignee_id",
-                table: "cards",
-                column: "assignee_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_cards_board_id",
-                table: "cards",
-                column: "board_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_cards_due_date",
-                table: "cards",
-                column: "due_date");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_cards_list_id",
-                table: "cards",
-                column: "list_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_cards_list_id_position",
-                table: "cards",
-                columns: new[] { "list_id", "position" });
-
-            migrationBuilder.CreateIndex(
-                name: "ix_cards_priority",
-                table: "cards",
-                column: "priority");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_cards_status",
-                table: "cards",
-                column: "status");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "cards");
+                name: "cards",
+                schema: "task");
         }
     }
 }

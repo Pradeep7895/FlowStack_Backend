@@ -23,6 +23,7 @@ public interface ICardService
     // Archive / Unarchive
     Task<CardResponse> ArchiveCardAsync(Guid cardId, Guid requesterId);
     Task<CardResponse> UnarchiveCardAsync(Guid cardId, Guid requesterId);
+    Task<IEnumerable<CardResponse>> GetArchivedCardsByBoardAsync(Guid boardId, Guid requesterId);
 
     // Hard delete
     Task DeleteCardAsync(Guid cardId, Guid requesterId);

@@ -12,14 +12,15 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FlowStack.TaskService.Migrations
 {
     [DbContext(typeof(CardDbContext))]
-    [Migration("20260505104446_TaskService")]
-    partial class TaskService
+    [Migration("20260514104757_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("task")
                 .HasAnnotation("ProductVersion", "8.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -103,28 +104,7 @@ namespace FlowStack.TaskService.Migrations
                     b.HasKey("CardId")
                         .HasName("pk_cards");
 
-                    b.HasIndex("AssigneeId")
-                        .HasDatabaseName("ix_cards_assignee_id");
-
-                    b.HasIndex("BoardId")
-                        .HasDatabaseName("ix_cards_board_id");
-
-                    b.HasIndex("DueDate")
-                        .HasDatabaseName("ix_cards_due_date");
-
-                    b.HasIndex("ListId")
-                        .HasDatabaseName("ix_cards_list_id");
-
-                    b.HasIndex("Priority")
-                        .HasDatabaseName("ix_cards_priority");
-
-                    b.HasIndex("Status")
-                        .HasDatabaseName("ix_cards_status");
-
-                    b.HasIndex("ListId", "Position")
-                        .HasDatabaseName("ix_cards_list_id_position");
-
-                    b.ToTable("cards", (string)null);
+                    b.ToTable("cards", "task");
                 });
 #pragma warning restore 612, 618
         }

@@ -9,6 +9,7 @@ public class CardServiceImpl : ICardService
 {
     private readonly ICardRepository _repo;
     private readonly BoardClient _boardClient;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     private static readonly HashSet<string> ValidPriorities = new(StringComparer.OrdinalIgnoreCase)
         { "LOW", "MEDIUM", "HIGH", "CRITICAL" };
@@ -16,17 +17,39 @@ public class CardServiceImpl : ICardService
     private static readonly HashSet<string> ValidStatuses = new(StringComparer.OrdinalIgnoreCase)
         { "TO_DO", "IN_PROGRESS", "IN_REVIEW", "DONE" };
 
-    public CardServiceImpl(ICardRepository repo, BoardClient boardClient)
+    public CardServiceImpl(
+        ICardRepository repo, 
+        BoardClient boardClient,
+        IHttpContextAccessor httpContextAccessor)
     {
         _repo = repo;
         _boardClient = boardClient;
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    private bool IsPlatformAdmin() =>
+        _httpContextAccessor.HttpContext?.User.IsInRole("PlatformAdmin") ?? false;
+
+    private async Task<BoardAccessResult> GetBoardAccessWithBypassAsync(Guid boardId, Guid userId)
+    {
+        if (IsPlatformAdmin())
+        {
+            return new BoardAccessResult
+            {
+                IsMember = true,
+                IsAdminOrCreator = true,
+                IsObserver = false,
+                IsClosed = false 
+            };
+        }
+        return await _boardClient.GetBoardAccessAsync(boardId, userId);
     }
 
     // CRUD 
 
     public async Task<CardResponse> CreateCardAsync(Guid requesterId, CreateCardRequest request)
     {
-        var access = await _boardClient.GetBoardAccessAsync(request.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(request.BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to create cards.");
@@ -63,7 +86,7 @@ public class CardServiceImpl : ICardService
     public async Task<CardResponse> GetCardByIdAsync(Guid cardId, Guid requesterId)
     {
         var card = await RequireCardAsync(cardId);
-        var access = await _boardClient.GetBoardAccessAsync(card.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(card.BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to view this card.");
@@ -77,7 +100,7 @@ public class CardServiceImpl : ICardService
         if (!cards.Any()) return Enumerable.Empty<CardResponse>();
 
         // Use the boardId from the first card to check access
-        var access = await _boardClient.GetBoardAccessAsync(cards.First().BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(cards.First().BoardId, requesterId);
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to view cards.");
 
@@ -86,7 +109,7 @@ public class CardServiceImpl : ICardService
 
     public async Task<IEnumerable<CardResponse>> GetCardsByBoardAsync(Guid boardId, Guid requesterId)
     {
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to view cards.");
 
@@ -103,7 +126,7 @@ public class CardServiceImpl : ICardService
     public async Task<CardResponse> UpdateCardAsync(Guid cardId, Guid requesterId, UpdateCardRequest request)
     {
         var card = await RequireCardAsync(cardId);
-        var access = await _boardClient.GetBoardAccessAsync(card.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(card.BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to update cards.");
@@ -146,7 +169,7 @@ public class CardServiceImpl : ICardService
     public async Task<CardResponse> MoveCardAsync(Guid cardId, Guid requesterId, MoveCardRequest request)
     {
         var card = await RequireCardAsync(cardId);
-        var access = await _boardClient.GetBoardAccessAsync(card.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(card.BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to move cards.");
@@ -186,7 +209,7 @@ public class CardServiceImpl : ICardService
         if (!currentCards.Any())
             throw new InvalidOperationException("No cards found in this list.");
 
-        var access = await _boardClient.GetBoardAccessAsync(currentCards.First().BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(currentCards.First().BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to reorder cards.");
@@ -227,7 +250,7 @@ public class CardServiceImpl : ICardService
     public async Task<CardResponse> ArchiveCardAsync(Guid cardId, Guid requesterId)
     {
         var card = await RequireCardAsync(cardId);
-        var access = await _boardClient.GetBoardAccessAsync(card.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(card.BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to archive cards.");
@@ -255,7 +278,7 @@ public class CardServiceImpl : ICardService
         if (!card.IsArchived)
             throw new InvalidOperationException("Card is not archived.");
 
-        var access = await _boardClient.GetBoardAccessAsync(card.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(card.BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to unarchive cards.");
@@ -273,6 +296,16 @@ public class CardServiceImpl : ICardService
         return CardResponse.FromCard(card);
     }
 
+    public async Task<IEnumerable<CardResponse>> GetArchivedCardsByBoardAsync(Guid boardId, Guid requesterId)
+    {
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
+        if (!access.IsMember)
+            throw new UnauthorizedAccessException("You must be a board member to view archived cards.");
+
+        var cards = await _repo.FindArchivedByBoardIdAsync(boardId);
+        return cards.Select(CardResponse.FromCard);
+    }
+
     // Hard delete 
 
     public async Task DeleteCardAsync(Guid cardId, Guid requesterId)
@@ -280,7 +313,7 @@ public class CardServiceImpl : ICardService
         var card = await _repo.FindByCardIdIncludingArchivedAsync(cardId)
             ?? throw new KeyNotFoundException($"Card {cardId} not found.");
 
-        var access = await _boardClient.GetBoardAccessAsync(card.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(card.BoardId, requesterId);
 
         if (!access.IsAdminOrCreator)
             throw new UnauthorizedAccessException("Only board Admins or the board creator can permanently delete cards.");
@@ -296,7 +329,7 @@ public class CardServiceImpl : ICardService
     public async Task<CardResponse> SetAssigneeAsync(Guid cardId, Guid requesterId, SetAssigneeRequest request)
     {
         var card = await RequireCardAsync(cardId);
-        var access = await _boardClient.GetBoardAccessAsync(card.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(card.BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to assign cards.");
@@ -315,7 +348,7 @@ public class CardServiceImpl : ICardService
     public async Task<CardResponse> SetPriorityAsync(Guid cardId, Guid requesterId, SetPriorityRequest request)
     {
         var card = await RequireCardAsync(cardId);
-        var access = await _boardClient.GetBoardAccessAsync(card.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(card.BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to change card priority.");

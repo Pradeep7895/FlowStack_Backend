@@ -103,6 +103,23 @@ public class CardController : ControllerBase
         }
     }
 
+    // GET /api/cards/board/{boardId}/archived
+    [HttpGet("board/{boardId:guid}/archived")]
+    [ProducesResponseType(typeof(IEnumerable<CardResponse>), 200)]
+    [ProducesResponseType(403)]
+    public async Task<IActionResult> GetArchivedByBoard([FromRoute] Guid boardId)
+    {
+        try
+        {
+            var cards = await _cardService.GetArchivedCardsByBoardAsync(boardId, GetCurrentUserId());
+            return Ok(cards);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
+    }
+
     // GET /api/cards/assignee/{assigneeId}
     [HttpGet("assignee/{assigneeId:guid}")]
     [ProducesResponseType(typeof(IEnumerable<CardResponse>), 200)]
