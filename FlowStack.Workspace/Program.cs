@@ -37,15 +37,15 @@ builder.Services.AddHttpClient("auth-service", client =>
 //  JWT Bearer Authentication 
 // workspace-service shares the SAME Jwt:Secret as auth-service.
 // Tokens are validated locally — no round-trip to auth-service per request.
-var jwtSecret   = builder.Configuration["Jwt:Secret"]
+var jwtSecret = builder.Configuration["Jwt:Secret"]
     ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
-var jwtIssuer   = builder.Configuration["Jwt:Issuer"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
@@ -103,7 +103,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description  = "Enter your JWT token."
+        Description = "Enter your JWT token."
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -131,15 +131,14 @@ var app = builder.Build();
 // Middleware pipeline 
 app.UseGlobalExceptionHandler();
 
-if (app.Environment.IsDevelopment())
+
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "FlowStack Workspace v1");
-        c.RoutePrefix = "swagger";
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "FlowStack Workspace v1");
+    c.RoutePrefix = "swagger";
+});
+
 
 app.UseHttpsRedirection();
 app.UseCors("AllowFlowStackWeb");
