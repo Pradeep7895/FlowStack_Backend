@@ -5,11 +5,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Serilog;
+
 
 try
 {
-    Log.Information("Starting FlowStack.Gateway...");
+    Console.WriteLine("Starting FlowStack.Gateway...");
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -160,9 +160,9 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "FlowStack.Gateway failed to start.");
+    Console.WriteLine($"FlowStack.Gateway failed to start: {ex.Message}");
 }
 finally
 {
-    Log.CloseAndFlush();
+
 }
