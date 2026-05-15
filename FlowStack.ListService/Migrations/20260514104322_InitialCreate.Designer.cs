@@ -12,14 +12,15 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FlowStack.ListService.Migrations
 {
     [DbContext(typeof(ListDbContext))]
-    [Migration("20260505062118_ListService")]
-    partial class ListService
+    [Migration("20260514104322_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("list")
                 .HasAnnotation("ProductVersion", "8.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -66,7 +67,7 @@ namespace FlowStack.ListService.Migrations
                     b.HasKey("ListId")
                         .HasName("pk_task_lists");
 
-                    b.ToTable("task_lists", (string)null);
+                    b.ToTable("task_lists", "list");
                 });
 #pragma warning restore 612, 618
         }

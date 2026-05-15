@@ -30,7 +30,8 @@ try
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
             .UseSnakeCaseNamingConvention());
 
-    // Dependency Injection 
+    // Dependency Injection
+    builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<IListRepository, ListRepository>();
     builder.Services.AddScoped<IListService, ListServiceImpl>();
 
@@ -73,7 +74,7 @@ try
     builder.Services.AddAuthorization(options =>
     {
         options.AddPolicy("MemberOrAbove", policy =>
-            policy.RequireRole("Member", "BoardAdmin", "PlatformAdmin"));
+            policy.RequireRole("Member", "WorkspaceAdmin", "PlatformAdmin"));
 
         options.AddPolicy("AdminOnly", policy =>
             policy.RequireRole("PlatformAdmin"));

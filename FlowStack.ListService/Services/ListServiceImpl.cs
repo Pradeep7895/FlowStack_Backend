@@ -9,18 +9,40 @@ public class ListServiceImpl : IListService
 {
     private readonly IListRepository _repo;
     private readonly BoardClient _boardClient;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public ListServiceImpl(IListRepository repo, BoardClient boardClient)
+    public ListServiceImpl(
+        IListRepository repo, 
+        BoardClient boardClient,
+        IHttpContextAccessor httpContextAccessor)
     {
         _repo = repo;
         _boardClient = boardClient;
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    private bool IsPlatformAdmin() =>
+        _httpContextAccessor.HttpContext?.User.IsInRole("PlatformAdmin") ?? false;
+
+    private async Task<BoardAccessResult> GetBoardAccessWithBypassAsync(Guid boardId, Guid userId)
+    {
+        if (IsPlatformAdmin())
+        {
+            return new BoardAccessResult
+            {
+                IsMember = true,
+                IsAdminOrCreator = true,
+                IsObserver = false,
+                IsClosed = false // Admin can even act on closed boards? Let's say yes for now.
+            };
+        }
+        return await _boardClient.GetBoardAccessAsync(boardId, userId);
     }
 
     // CRUD 
-
     public async Task<TaskListResponse> CreateListAsync(Guid requesterId, CreateListRequest request)
     {
-        var access = await _boardClient.GetBoardAccessAsync(request.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(request.BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to create lists.");
@@ -46,7 +68,7 @@ public class ListServiceImpl : IListService
     public async Task<TaskListResponse> GetListByIdAsync(Guid listId, Guid requesterId)
     {
         var list = await RequireListAsync(listId);
-        var access = await _boardClient.GetBoardAccessAsync(list.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(list.BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to view this list.");
@@ -56,7 +78,7 @@ public class ListServiceImpl : IListService
 
     public async Task<IEnumerable<TaskListResponse>> GetListsByBoardAsync(Guid boardId, Guid requesterId)
     {
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to view lists.");
@@ -68,7 +90,7 @@ public class ListServiceImpl : IListService
     public async Task<TaskListResponse> UpdateListAsync(Guid listId, Guid requesterId, UpdateListRequest request)
     {
         var list = await RequireListAsync(listId);
-        var access = await _boardClient.GetBoardAccessAsync(list.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(list.BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to update lists.");
@@ -89,7 +111,7 @@ public class ListServiceImpl : IListService
     // Position management 
     public async Task<IEnumerable<TaskListResponse>> ReorderListsAsync(Guid requesterId, ReorderListsRequest request)
     {
-        var access = await _boardClient.GetBoardAccessAsync(request.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(request.BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to reorder lists.");
@@ -135,7 +157,7 @@ public class ListServiceImpl : IListService
     public async Task<TaskListResponse> ArchiveListAsync(Guid listId, Guid requesterId)
     {
         var list = await RequireListAsync(listId);
-        var access = await _boardClient.GetBoardAccessAsync(list.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(list.BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to archive lists.");
@@ -164,7 +186,7 @@ public class ListServiceImpl : IListService
         if (!list.IsArchived)
             throw new InvalidOperationException("List is not archived.");
 
-        var access = await _boardClient.GetBoardAccessAsync(list.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(list.BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to unarchive lists.");
@@ -184,7 +206,7 @@ public class ListServiceImpl : IListService
 
     public async Task<IEnumerable<TaskListResponse>> GetArchivedListsAsync(Guid boardId, Guid requesterId)
     {
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to view archived lists.");
@@ -201,7 +223,7 @@ public class ListServiceImpl : IListService
         var list = await _repo.FindByListIdIncludingArchivedAsync(listId)
             ?? throw new KeyNotFoundException($"List {listId} not found.");
 
-        var access = await _boardClient.GetBoardAccessAsync(list.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(list.BoardId, requesterId);
 
         if (!access.IsAdminOrCreator)
             throw new UnauthorizedAccessException("Only board Admins or the board creator can permanently delete lists.");
@@ -221,20 +243,20 @@ public class ListServiceImpl : IListService
         var list = await RequireListAsync(listId);
 
         // Requester must be Admin on the SOURCE board
-        var sourceAccess = await _boardClient.GetBoardAccessAsync(list.BoardId, requesterId);
+        var sourceAccess = await GetBoardAccessWithBypassAsync(list.BoardId, requesterId);
         if (!sourceAccess.IsAdminOrCreator)
             throw new UnauthorizedAccessException("Only board Admins or the creator can move lists between boards.");
 
-        if (sourceAccess.IsClosed)
+        if (sourceAccess.IsClosed && !IsPlatformAdmin())
             throw new InvalidOperationException("Cannot move lists from a closed board.");
 
         // Requester must also be a member of the TARGET board
-        var targetAccess = await _boardClient.GetBoardAccessAsync(request.TargetBoardId, requesterId);
+        var targetAccess = await GetBoardAccessWithBypassAsync(request.TargetBoardId, requesterId);
 
         if (!targetAccess.IsMember)
             throw new UnauthorizedAccessException("You must be a member of the target board to move a list there.");
 
-        if (targetAccess.IsClosed)
+        if (targetAccess.IsClosed && !IsPlatformAdmin())
             throw new InvalidOperationException("Cannot move a list to a closed board.");
 
         // Both boards must be in the same workspace

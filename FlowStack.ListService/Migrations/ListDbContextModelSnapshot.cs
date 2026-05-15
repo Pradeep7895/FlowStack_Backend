@@ -17,6 +17,7 @@ namespace FlowStack.ListService.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("list")
                 .HasAnnotation("ProductVersion", "8.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -63,7 +64,7 @@ namespace FlowStack.ListService.Migrations
                     b.HasKey("ListId")
                         .HasName("pk_task_lists");
 
-                    b.ToTable("task_lists", (string)null);
+                    b.ToTable("task_lists", "list");
                 });
 #pragma warning restore 612, 618
         }

@@ -6,13 +6,17 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FlowStack.ListService.Migrations
 {
     /// <inheritdoc />
-    public partial class ListService : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "list");
+
             migrationBuilder.CreateTable(
                 name: "task_lists",
+                schema: "list",
                 columns: table => new
                 {
                     list_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -34,7 +38,8 @@ namespace FlowStack.ListService.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "task_lists");
+                name: "task_lists",
+                schema: "list");
         }
     }
 }
