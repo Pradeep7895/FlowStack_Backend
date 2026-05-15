@@ -17,6 +17,7 @@ namespace FlowStack.LabelService.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("label")
                 .HasAnnotation("ProductVersion", "8.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -45,7 +46,7 @@ namespace FlowStack.LabelService.Migrations
                     b.HasIndex("LabelId")
                         .HasDatabaseName("ix_card_labels_label_id");
 
-                    b.ToTable("card_labels", (string)null);
+                    b.ToTable("card_labels", "label");
                 });
 
             modelBuilder.Entity("FlowStack.LabelService.Models.Checklist", b =>
@@ -79,7 +80,7 @@ namespace FlowStack.LabelService.Migrations
                     b.HasIndex("CardId")
                         .HasDatabaseName("ix_checklists_card_id");
 
-                    b.ToTable("checklists", (string)null);
+                    b.ToTable("checklists", "label");
                 });
 
             modelBuilder.Entity("FlowStack.LabelService.Models.ChecklistItem", b =>
@@ -121,7 +122,7 @@ namespace FlowStack.LabelService.Migrations
                     b.HasIndex("ChecklistId")
                         .HasDatabaseName("ix_checklist_items_checklist_id");
 
-                    b.ToTable("checklist_items", (string)null);
+                    b.ToTable("checklist_items", "label");
                 });
 
             modelBuilder.Entity("FlowStack.LabelService.Models.Label", b =>
@@ -157,7 +158,7 @@ namespace FlowStack.LabelService.Migrations
                     b.HasIndex("BoardId")
                         .HasDatabaseName("ix_labels_board_id");
 
-                    b.ToTable("labels", (string)null);
+                    b.ToTable("labels", "label");
                 });
 
             modelBuilder.Entity("FlowStack.LabelService.Models.CardLabel", b =>

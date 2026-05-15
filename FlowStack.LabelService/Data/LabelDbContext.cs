@@ -14,6 +14,7 @@ public class LabelDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasDefaultSchema("label");
         base.OnModelCreating(modelBuilder);
 
         // CardLabel composite key and indexes

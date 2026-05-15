@@ -12,6 +12,9 @@ using Serilog;
 
 try
 {
+    // Npgsql 6.0+ legacy timestamp behavior
+    AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
     Log.Information("Starting FlowStack.LabelService...");
 
     var builder = WebApplication.CreateBuilder(args);
@@ -22,7 +25,8 @@ try
             .UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
             .UseSnakeCaseNamingConvention());
 
-    // Dependency Injection 
+    // Dependency Injection
+    builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<ILabelRepository, LabelRepository>();
     builder.Services.AddScoped<ILabelService, LabelServiceImpl>();
 

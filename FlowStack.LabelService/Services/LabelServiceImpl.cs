@@ -10,19 +10,43 @@ public class LabelServiceImpl : ILabelService
     private readonly ILabelRepository _repo;
     private readonly TaskClient _taskClient;
     private readonly BoardClient _boardClient;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public LabelServiceImpl(ILabelRepository repo, TaskClient taskClient, BoardClient boardClient)
+    public LabelServiceImpl(
+        ILabelRepository repo, 
+        TaskClient taskClient, 
+        BoardClient boardClient,
+        IHttpContextAccessor httpContextAccessor)
     {
         _repo = repo;
         _taskClient = taskClient;
         _boardClient = boardClient;
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    private bool IsPlatformAdmin() =>
+        _httpContextAccessor.HttpContext?.User.IsInRole("PlatformAdmin") ?? false;
+
+    private async Task<BoardAccessResult> GetBoardAccessWithBypassAsync(Guid boardId, Guid userId)
+    {
+        if (IsPlatformAdmin())
+        {
+            return new BoardAccessResult
+            {
+                IsMember = true,
+                IsAdminOrCreator = true,
+                IsObserver = false,
+                IsClosed = false
+            };
+        }
+        return await _boardClient.GetBoardAccessAsync(boardId, userId);
     }
 
     // Labels 
 
     public async Task<LabelResponse> CreateLabelAsync(Guid requesterId, string authHeader, CreateLabelRequest request)
     {
-        var access = await _boardClient.GetBoardAccessAsync(request.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(request.BoardId, requesterId);
 
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to create labels.");
@@ -49,7 +73,7 @@ public class LabelServiceImpl : ILabelService
 
     public async Task<IEnumerable<LabelResponse>> GetLabelsByBoardAsync(Guid boardId, Guid requesterId)
     {
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
 
         // As long as they are a member (including observer), they can view labels
         if (!access.IsMember)
@@ -70,7 +94,7 @@ public class LabelServiceImpl : ILabelService
         var label = await _repo.GetLabelByIdAsync(labelId)
             ?? throw new KeyNotFoundException("Label not found.");
 
-        var access = await _boardClient.GetBoardAccessAsync(label.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(label.BoardId, requesterId);
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to update labels.");
         if (access.IsClosed)
@@ -95,7 +119,7 @@ public class LabelServiceImpl : ILabelService
         var label = await _repo.GetLabelByIdAsync(labelId)
             ?? throw new KeyNotFoundException("Label not found.");
 
-        var access = await _boardClient.GetBoardAccessAsync(label.BoardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(label.BoardId, requesterId);
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to delete labels.");
         if (access.IsClosed)
@@ -133,7 +157,7 @@ public class LabelServiceImpl : ILabelService
         if (label.BoardId != boardId)
             throw new InvalidOperationException("Label and Card do not belong to the same board.");
 
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to add labels to cards.");
         if (access.IsClosed)
@@ -147,7 +171,7 @@ public class LabelServiceImpl : ILabelService
         var boardId = await _taskClient.GetBoardIdForCardAsync(cardId, authHeader)
             ?? throw new KeyNotFoundException("Card not found or access denied.");
 
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to remove labels from cards.");
         if (access.IsClosed)
@@ -163,7 +187,7 @@ public class LabelServiceImpl : ILabelService
         var boardId = await _taskClient.GetBoardIdForCardAsync(request.CardId, authHeader)
             ?? throw new KeyNotFoundException("Card not found or access denied.");
 
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to create checklists.");
         if (access.IsClosed)
@@ -220,7 +244,7 @@ public class LabelServiceImpl : ILabelService
         var boardId = await _taskClient.GetBoardIdForCardAsync(checklist.CardId, authHeader)
             ?? throw new KeyNotFoundException("Card not found or access denied.");
 
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to delete checklists.");
         if (access.IsClosed)
@@ -239,7 +263,7 @@ public class LabelServiceImpl : ILabelService
         var boardId = await _taskClient.GetBoardIdForCardAsync(checklist.CardId, authHeader)
             ?? throw new KeyNotFoundException("Card not found or access denied.");
 
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to add items.");
         if (access.IsClosed)
@@ -271,7 +295,7 @@ public class LabelServiceImpl : ILabelService
         var boardId = await _taskClient.GetBoardIdForCardAsync(item.Checklist!.CardId, authHeader)
             ?? throw new KeyNotFoundException("Card not found or access denied.");
 
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to toggle items.");
         if (access.IsClosed)
@@ -300,7 +324,7 @@ public class LabelServiceImpl : ILabelService
         var boardId = await _taskClient.GetBoardIdForCardAsync(item.Checklist!.CardId, authHeader)
             ?? throw new KeyNotFoundException("Card not found or access denied.");
 
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to assign items.");
         if (access.IsClosed)
@@ -329,7 +353,7 @@ public class LabelServiceImpl : ILabelService
         var boardId = await _taskClient.GetBoardIdForCardAsync(item.Checklist!.CardId, authHeader)
             ?? throw new KeyNotFoundException("Card not found or access denied.");
 
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to set item due dates.");
         if (access.IsClosed)
@@ -358,7 +382,7 @@ public class LabelServiceImpl : ILabelService
         var boardId = await _taskClient.GetBoardIdForCardAsync(item.Checklist!.CardId, authHeader)
             ?? throw new KeyNotFoundException("Card not found or access denied.");
 
-        var access = await _boardClient.GetBoardAccessAsync(boardId, requesterId);
+        var access = await GetBoardAccessWithBypassAsync(boardId, requesterId);
         if (!access.IsMember)
             throw new UnauthorizedAccessException("You must be a board member to delete items.");
         if (access.IsClosed)

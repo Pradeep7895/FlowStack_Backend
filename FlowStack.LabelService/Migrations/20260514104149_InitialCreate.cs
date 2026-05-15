@@ -11,8 +11,12 @@ namespace FlowStack.LabelService.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "label");
+
             migrationBuilder.CreateTable(
                 name: "checklists",
+                schema: "label",
                 columns: table => new
                 {
                     checklist_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -28,6 +32,7 @@ namespace FlowStack.LabelService.Migrations
 
             migrationBuilder.CreateTable(
                 name: "labels",
+                schema: "label",
                 columns: table => new
                 {
                     label_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -43,6 +48,7 @@ namespace FlowStack.LabelService.Migrations
 
             migrationBuilder.CreateTable(
                 name: "checklist_items",
+                schema: "label",
                 columns: table => new
                 {
                     item_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -59,6 +65,7 @@ namespace FlowStack.LabelService.Migrations
                     table.ForeignKey(
                         name: "fk_checklist_items_checklists_checklist_id",
                         column: x => x.checklist_id,
+                        principalSchema: "label",
                         principalTable: "checklists",
                         principalColumn: "checklist_id",
                         onDelete: ReferentialAction.Cascade);
@@ -66,6 +73,7 @@ namespace FlowStack.LabelService.Migrations
 
             migrationBuilder.CreateTable(
                 name: "card_labels",
+                schema: "label",
                 columns: table => new
                 {
                     card_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -78,6 +86,7 @@ namespace FlowStack.LabelService.Migrations
                     table.ForeignKey(
                         name: "fk_card_labels_labels_label_id",
                         column: x => x.label_id,
+                        principalSchema: "label",
                         principalTable: "labels",
                         principalColumn: "label_id",
                         onDelete: ReferentialAction.Cascade);
@@ -85,26 +94,31 @@ namespace FlowStack.LabelService.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "ix_card_labels_card_id",
+                schema: "label",
                 table: "card_labels",
                 column: "card_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_card_labels_label_id",
+                schema: "label",
                 table: "card_labels",
                 column: "label_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_checklist_items_checklist_id",
+                schema: "label",
                 table: "checklist_items",
                 column: "checklist_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_checklists_card_id",
+                schema: "label",
                 table: "checklists",
                 column: "card_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_labels_board_id",
+                schema: "label",
                 table: "labels",
                 column: "board_id");
         }
@@ -113,16 +127,20 @@ namespace FlowStack.LabelService.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "card_labels");
+                name: "card_labels",
+                schema: "label");
 
             migrationBuilder.DropTable(
-                name: "checklist_items");
+                name: "checklist_items",
+                schema: "label");
 
             migrationBuilder.DropTable(
-                name: "labels");
+                name: "labels",
+                schema: "label");
 
             migrationBuilder.DropTable(
-                name: "checklists");
+                name: "checklists",
+                schema: "label");
         }
     }
 }
