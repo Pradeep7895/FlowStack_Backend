@@ -5,6 +5,7 @@ Properties/
 
 # App settings (contains secrets)
 appsettings.json
+!FlowStack.Gateway/appsettings.json
 
 # Visual Studio cache file
 *.csproj.user
