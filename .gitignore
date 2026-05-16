@@ -2,10 +2,11 @@
 bin/
 obj/
 Properties/
+keys/
 
 # App settings (contains secrets)
-appsettings.json
-!FlowStack.Gateway/appsettings.json
+# appsettings.json
+
 
 # Visual Studio cache file
 *.csproj.user
