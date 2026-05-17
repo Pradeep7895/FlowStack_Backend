@@ -4,6 +4,7 @@ using FlowStack.AuthService.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Microsoft.Extensions.Configuration;
 
 namespace FlowStack.AuthService.Controllers;
 
@@ -23,10 +24,12 @@ namespace FlowStack.AuthService.Controllers;
 public class OAuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IConfiguration _configuration;
 
-    public OAuthController(IAuthService authService)
+    public OAuthController(IAuthService authService, IConfiguration configuration)
     {
         _authService = authService;
+        _configuration = configuration;
     }
 
     //  Google 
@@ -131,8 +134,10 @@ public class OAuthController : ControllerBase
                 fullName ?? email.Split('@')[0],  
                 avatarUrl);
 
-            // Instead of returning JSON, redirect back to the Frontend (port 3000)
-            var frontendUrl = "http://localhost:3000/oauth-success";
+            // Instead of returning JSON, redirect back to the Frontend
+            var baseFrontendUrl = _configuration["FrontendUrl"] ?? "http://localhost:3000";
+            if (!baseFrontendUrl.EndsWith("/")) baseFrontendUrl += "/";
+            var successUrl = $"{baseFrontendUrl}oauth-success";
             var query = $"?token={response.AccessToken}" +
                         $"&refreshToken={response.RefreshToken}" +
                         $"&userId={response.User.UserId}" +
@@ -142,12 +147,14 @@ public class OAuthController : ControllerBase
                         $"&role={response.User.Role}" +
                         $"&avatarUrl={Uri.EscapeDataString(response.User.AvatarUrl ?? "")}";
 
-            return Redirect(frontendUrl + query);
+            return Redirect(successUrl + query);
         }
         catch (UnauthorizedAccessException ex)
         {
             // Account exists but is deactivated
-            return Redirect($"http://localhost:3000/login?error={Uri.EscapeDataString(ex.Message)}");
+            var baseFrontendUrl = _configuration["FrontendUrl"] ?? "http://localhost:3000";
+            if (!baseFrontendUrl.EndsWith("/")) baseFrontendUrl += "/";
+            return Redirect($"{baseFrontendUrl}login?error={Uri.EscapeDataString(ex.Message)}");
         }
     }
 }
